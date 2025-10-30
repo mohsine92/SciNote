@@ -1,0 +1,9 @@
+{
+    "name": "mohsine92/scinote",
+    "description": "Projet SciNote : gestion d'articles scientifiques",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "firebase/php-jwt": "^6.11"
+    }
+}

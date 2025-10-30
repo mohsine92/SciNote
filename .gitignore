@@ -1,0 +1,7 @@
+/vendor/
+uploads/
+config/config.php
+*.env
+.idea/
+.DS_Store
+node_modules/

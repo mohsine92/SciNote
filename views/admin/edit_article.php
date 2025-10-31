@@ -1,57 +1,74 @@
 <?php
+session_start();
 require_once __DIR__ . '/../../models/Article.php';
+
+// Vérification admin
+if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
+    header('Location: login.php');
+    exit;
+}
 
 $articleModel = new Article();
 $id = $_GET['id'] ?? null;
 
 if (!$id) {
-    die('ID manquant');
+    header('Location: dashboard.php');
+    exit;
 }
 
 $article = $articleModel->getById($id);
 if (!$article) {
-    die('Article introuvable');
+    header('Location: dashboard.php');
+    exit;
 }
 
-$message = '';
+$error = '';
+$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $data = [
-        'nom' => $_POST['nom'],
-        'description' => $_POST['description'],
-        'auteur' => $_POST['auteur'],
-        'email' => $_POST['email'],
-        'photo' => $_POST['photo'] ?? '',
-        'date_publication' => $article['date_publication'] // garder la date existante
-    ];
+    $nom = $_POST['nom'] ?? '';
+    $description = $_POST['description'] ?? '';
+    $auteur = $_POST['auteur'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $date_publication = $_POST['date_publication'] ?? date('Y-m-d');
 
-    $articleModel->update($id, $data);
-    $message = "Article mis à jour !";
-    $article = $articleModel->getById($id); // refresh
+    if (!$nom || !$description || !$auteur || !$email) {
+        $error = "Tous les champs sont obligatoires";
+    } else {
+        $updated = $articleModel->update($id, [
+            'nom' => $nom,
+            'description' => $description,
+            'auteur' => $auteur,
+            'email' => $email,
+            'date_publication' => $date_publication
+        ]);
+        $success = $updated ? "Article mis à jour avec succès" : "Erreur lors de la mise à jour";
+        // Recharger l'article pour afficher les nouvelles valeurs
+        $article = $articleModel->getById($id);
+    }
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<title>Éditer Article</title>
-</head>
-<body>
-<h1>Éditer Article</h1>
-
-<?php if($message): ?>
-<p><?= $message ?></p>
-<?php endif; ?>
+<h2>Éditer Article</h2>
+<?php if ($error) echo "<p style='color:red;'>$error</p>"; ?>
+<?php if ($success) echo "<p style='color:green;'>$success</p>"; ?>
 
 <form method="POST">
-<label>Nom: <input type="text" name="nom" value="<?= htmlspecialchars($article['nom']) ?>" required></label><br><br>
-<label>Description: <textarea name="description" required><?= htmlspecialchars($article['description']) ?></textarea></label><br><br>
-<label>Auteur: <input type="text" name="auteur" value="<?= htmlspecialchars($article['auteur']) ?>" required></label><br><br>
-<label>Email: <input type="email" name="email" value="<?= htmlspecialchars($article['email']) ?>" required></label><br><br>
-<label>Photo: <input type="text" name="photo" value="<?= htmlspecialchars($article['photo']) ?>"></label><br><br>
-<button type="submit">Mettre à jour</button>
+    <label>Nom :</label><br>
+    <input type="text" name="nom" value="<?php echo htmlspecialchars($article['nom']); ?>" required><br><br>
+
+    <label>Description :</label><br>
+    <textarea name="description" required><?php echo htmlspecialchars($article['description']); ?></textarea><br><br>
+
+    <label>Auteur :</label><br>
+    <input type="text" name="auteur" value="<?php echo htmlspecialchars($article['auteur']); ?>" required><br><br>
+
+    <label>Email :</label><br>
+    <input type="email" name="email" value="<?php echo htmlspecialchars($article['email']); ?>" required><br><br>
+
+    <label>Date de publication :</label><br>
+    <input type="date" name="date_publication" value="<?php echo htmlspecialchars($article['date_publication']); ?>"><br><br>
+
+    <button type="submit">Mettre à jour</button>
 </form>
 <a href="dashboard.php">Retour au dashboard</a>
-</body>
-</html>

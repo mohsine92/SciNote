@@ -1,7 +1,65 @@
-/vendor/
-uploads/
-config/config.php
-*.env
-.idea/
+# -------------------
+# IDE / éditeur
+# -------------------
+/.idea/
+/.vscode/
+/*.sublime-project
+/*.sublime-workspace
+
+# -------------------
+# Système
+# -------------------
 .DS_Store
-node_modules/
+Thumbs.db
+desktop.ini
+
+# -------------------
+# PHP / Composer
+# -------------------
+/vendor/
+/composer.lock
+/.phpunit.result.cache
+
+# -------------------
+# Environnement et configuration locale
+# -------------------
+.env
+.env.local
+.env.*.local
+.htaccess_backup
+
+# -------------------
+# Logs et caches
+# -------------------
+/logs/
+/tmp/
+/*.log
+/cache/
+/sessions/
+
+# -------------------
+# Assets générés / node
+# -------------------
+/node_modules/
+/dist/
+/build/
+/public/build/
+
+# -------------------
+# Uploads / fichiers utilisateurs
+# -------------------
+/uploads/
+
+# -------------------
+# Tests / coverage
+# -------------------
+/coverage/
+/phpunit.xml
+/phpunit.xml.dist
+
+# -------------------
+# Autres
+# -------------------
+*.swp
+*.bak
+*.tmp

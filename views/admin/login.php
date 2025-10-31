@@ -11,7 +11,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $user = $auth->login($email, $password);
     if ($user && $user['role'] === 'admin') {
-        $_SESSION['admin'] = $user;
+        $_SESSION['user'] = [
+            'id' => $user['id'],
+            'email' => $user['email'],
+            'role' => $user['role']
+        ];
         header('Location: dashboard.php');
         exit;
     } else {

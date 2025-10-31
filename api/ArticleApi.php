@@ -7,26 +7,26 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+// Gestion des requêtes OPTIONS (préflight)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// ✅ Récupérer le token depuis GET ou POST
-$token = $_GET['token'] ?? ($_POST['token'] ?? null);
+// Récupération du token JWT
+$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+$token = str_replace('Bearer ', '', $authHeader);
 $userData = JWTHandler::validateToken($token);
-
-if (!$userData) {
-    http_response_code(403);
-    echo json_encode(['status' => 'error', 'message' => 'Token invalide ou manquant']);
-    exit;
-}
 
 // Connexion au modèle Article
 $articleModel = new Article();
 
-switch ($_SERVER['REQUEST_METHOD']) {
+// --- ROUTES CRUD ---
+$method = $_SERVER['REQUEST_METHOD'];
+
+switch ($method) {
     case 'GET':
+        // Lecture accessible à tous
         if (isset($_GET['id'])) {
             $article = $articleModel->getById($_GET['id']);
             echo json_encode($article ?: ['message' => 'Aucun article trouvé']);
@@ -36,46 +36,55 @@ switch ($_SERVER['REQUEST_METHOD']) {
         break;
 
     case 'POST':
-        $data = json_decode(file_get_contents("php://input"), true);
-
-        if (empty($data['nom']) || empty($data['description']) || empty($data['auteur']) || empty($data['email'])) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Champs obligatoires manquants']);
-            exit;
-        }
-
-        $articleModel->create($data);
-        echo json_encode(['status' => 'success', 'message' => 'Article créé avec succès']);
-        break;
-
     case 'PUT':
-        if (!isset($_GET['id'])) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'ID requis']);
-            exit;
-        }
-
-        $data = json_decode(file_get_contents("php://input"), true);
-        $updated = $articleModel->update($_GET['id'], $data);
-
-        echo json_encode([
-            'status' => $updated ? 'success' : 'error',
-            'message' => $updated ? 'Article mis à jour' : 'Erreur lors de la mise à jour'
-        ]);
-        break;
-
     case 'DELETE':
-        if (!isset($_GET['id'])) {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'ID requis']);
+        // Pour créer, modifier ou supprimer, il faut un utilisateur connecté
+        if (!$userData) {
+            http_response_code(401);
+            echo json_encode(['status' => 'error', 'message' => 'Token manquant ou invalide']);
             exit;
         }
 
-        $deleted = $articleModel->delete($_GET['id']);
-        echo json_encode([
-            'status' => $deleted ? 'success' : 'error',
-            'message' => $deleted ? 'Article supprimé' : 'Erreur lors de la suppression'
-        ]);
+        // Créer un article
+        if ($method === 'POST') {
+            $data = json_decode(file_get_contents("php://input"), true);
+            if (empty($data['nom']) || empty($data['description']) || empty($data['auteur']) || empty($data['email'])) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'Champs obligatoires manquants']);
+                exit;
+            }
+            $articleModel->create($data);
+            echo json_encode(['status' => 'success', 'message' => 'Article créé avec succès']);
+        }
+
+        // Modifier un article
+        if ($method === 'PUT') {
+            if (!isset($_GET['id'])) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'ID requis']);
+                exit;
+            }
+            $data = json_decode(file_get_contents("php://input"), true);
+            $updated = $articleModel->update($_GET['id'], $data);
+            echo json_encode([
+                'status' => $updated ? 'success' : 'error',
+                'message' => $updated ? 'Article mis à jour' : 'Erreur lors de la mise à jour'
+            ]);
+        }
+
+        // Supprimer un article
+        if ($method === 'DELETE') {
+            if (!isset($_GET['id'])) {
+                http_response_code(400);
+                echo json_encode(['status' => 'error', 'message' => 'ID requis']);
+                exit;
+            }
+            $deleted = $articleModel->delete($_GET['id']);
+            echo json_encode([
+                'status' => $deleted ? 'success' : 'error',
+                'message' => $deleted ? 'Article supprimé' : 'Erreur lors de la suppression'
+            ]);
+        }
         break;
 
     default:
